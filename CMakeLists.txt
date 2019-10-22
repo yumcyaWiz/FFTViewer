@@ -31,3 +31,7 @@ target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_LOADER_GLAD)
 target_include_directories(imgui PUBLIC ext/imgui ext/glad/include)
 target_include_directories(main PUBLIC ext/imgui)
 target_link_libraries(main PUBLIC imgui) 
+
+#fftw
+add_subdirectory(ext/fftw)
+target_link_libraries(main PUBLIC ${fftw3_lib})
