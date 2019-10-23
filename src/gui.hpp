@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cmath>
 
 #include "GLFW/glfw3.h"
 #include "glad/glad.h"
@@ -20,6 +21,7 @@ class GUI {
     glGenTextures(1, &ift_texture_id);
 
     setImage("test.jpg");
+    setFFT();
   };
 
   void draw() const {
@@ -83,22 +85,53 @@ class GUI {
   };
 
   void setFFT() {
+    //allocate input, ourput array
     const int N = image_width * image_height;
     fftw_complex *input, *output;
     input = (fftw_complex*)(fftw_malloc(sizeof(fftw_complex) * N));
     output = (fftw_complex*)(fftw_malloc(sizeof(fftw_complex) * N));
 
+    //create plan
     fftw_plan plan;
     plan = fftw_plan_dft_2d(image_width, image_height, input, output, FFTW_FORWARD, FFTW_ESTIMATE);
 
+    //input data
     for (int j = 0; j < image_height; ++j) {
       for (int i = 0; i < image_width; ++i) {
         const float r = image[0 + 3*i + 3*image_width*j];
-        const float g = image[1 + 3*i + 3*image_width*j];
-        const float b = image[2 + 3*i + 3*image_width*j];
-        input[i + image_width*j][0] = (r + g + b)/3.0f;
+        input[i + image_width*j][0] = r;
+        input[i + image_width*j][1] = 0;
       }
     }
+
+    //fft
+    fftw_execute(plan);
+    fftw_destroy_plan(plan);
+    fftw_free(input);
+
+    //create frequency domain texture
+    float *tex = new float[3 * image_width * image_height];
+    for (int j = 0; j < image_height; ++j) {
+      for (int i = 0; i < image_width; ++i) {
+        const float real = output[i + image_width*j][0];
+        const float imag = output[i + image_width*j][1];
+        const float amp = std::sqrt(real*real + imag*imag);
+        tex[0 + 3*i + 3*image_width*j] = amp;
+        tex[1 + 3*i + 3*image_width*j] = amp;
+        tex[2 + 3*i + 3*image_width*j] = amp;
+      }
+    }
+    fftw_free(output);
+
+    glBindTexture(GL_TEXTURE_2D, ft_texture_id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image_width, image_height, 0, GL_RGB, GL_FLOAT, tex);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    delete[] tex;
   };
 };
 
