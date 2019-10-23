@@ -39,6 +39,13 @@ class GUI {
       ImGui::Image(texid, ImVec2(image_width, image_height));
     }
     ImGui::End();
+
+    ImGui::Begin("Space Domain");
+    {
+      ImTextureID texid = (ImTextureID)(intptr_t)ift_texture_id;
+      ImGui::Image(texid, ImVec2(image_width, image_height));
+    }
+    ImGui::End();
   };
 
   private:
