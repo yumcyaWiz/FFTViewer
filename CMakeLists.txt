@@ -10,6 +10,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -s -DNDEBUG -march=native -mtune=native")
 
 
 add_executable(main src/main.cpp)
+target_include_directories(main PUBLIC ext)
+
+#stb_image
+target_compile_definitions(main PUBLIC STB_IMAGE_IMPLEMENTATION)
 
 #glad
 add_library(glad STATIC ext/glad/src/glad.c)
@@ -29,7 +33,7 @@ target_link_libraries(main PUBLIC glfw)
 add_library(imgui STATIC ext/imgui/imgui.cpp ext/imgui/imgui_draw.cpp ext/imgui/imgui_widgets.cpp ext/imgui/examples/imgui_impl_glfw.cpp ext/imgui/examples/imgui_impl_opengl3.cpp)
 target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_LOADER_GLAD)
 target_include_directories(imgui PUBLIC ext/imgui ext/glad/include)
-target_include_directories(main PUBLIC ext/imgui)
+target_include_directories(main PUBLIC imgui)
 target_link_libraries(main PUBLIC imgui) 
 
 #fftw
