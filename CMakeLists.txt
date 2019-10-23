@@ -9,7 +9,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g3 -O0 -pg")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -s -DNDEBUG -march=native -mtune=native")
 
 
-add_executable(main main.cpp)
+add_executable(main src/main.cpp)
 
 #glad
 add_library(glad STATIC ext/glad/src/glad.c)
