@@ -111,11 +111,11 @@ class GUI {
     fftw_free(input);
 
     //create frequency domain texture
-    std::vector<float> tex(3 * image_width * image_height, 0);
-    createFFTTexture(output, tex);
+    std::vector<float> tex_freq(3 * image_width * image_height, 0);
+    createFFTTexture(output, tex_freq);
 
     //normalize texture
-    normalizeFFT(tex);
+    normalizeFFT(tex_freq);
 
     //send frequency domain texture
     glBindTexture(GL_TEXTURE_2D, ft_texture_id);
@@ -123,10 +123,29 @@ class GUI {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image_width, image_height, 0, GL_RGB, GL_FLOAT, tex.data());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image_width, image_height, 0, GL_RGB, GL_FLOAT, tex_freq.data());
     glBindTexture(GL_TEXTURE_2D, 0);
 
+    //ift
+    fftw_complex* output_ift = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * N);
+    fftw_plan ift_plan = fftw_plan_dft_2d(image_width, image_height, output, output_ift, FFTW_BACKWARD, FFTW_ESTIMATE);
+    fftw_execute(ift_plan);
+    fftw_destroy_plan(ift_plan);
     fftw_free(output);
+
+    //create space domain texture
+    std::vector<float> tex_space(3 * image_width * image_height, 0);
+    createIFFTTexture(output_ift, tex_space);
+    fftw_free(output_ift);
+
+    //send space domain texture
+    glBindTexture(GL_TEXTURE_2D, ift_texture_id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image_width, image_height, 0, GL_RGB, GL_FLOAT, tex_space.data());
+    glBindTexture(GL_TEXTURE_2D, 0);
   };
 
 
@@ -162,7 +181,20 @@ class GUI {
         tex[2 + 3*i_ld + 3*image_width*j_ru] = amp;
       }
     }
-  }
+  };
+
+
+  void createIFFTTexture(const fftw_complex* ifft, std::vector<float>& tex) {
+    for (int j = 0; j < image_height; ++j) {
+      for (int i = 0; i < image_width; ++i) {
+        const float real = ifft[i + image_width*j][0];
+        const float scale = image_width * image_height;
+        tex[0 + 3*i + 3*image_width*j] = real / scale;
+        tex[1 + 3*i + 3*image_width*j] = real / scale;
+        tex[2 + 3*i + 3*image_width*j] = real / scale;
+      }
+    }
+  };
 
 
   void normalizeFFT(std::vector<float>& data) {
