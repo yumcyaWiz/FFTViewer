@@ -31,7 +31,7 @@ int main() {
   glfwSwapInterval(1);
 
   //Initialize GLAD
-  if (!gladLoadGL()) {
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     std::cerr << "failed to initialize glad" << std::endl;
   }
 
