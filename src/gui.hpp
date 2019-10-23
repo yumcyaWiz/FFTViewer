@@ -25,7 +25,7 @@ class GUI {
     computeFFT();
   };
 
-  void draw() const {
+  void draw() {
     ImGui::Begin("Image");
     {
       ImTextureID texid = (ImTextureID)(intptr_t)image_texture_id;
@@ -46,15 +46,30 @@ class GUI {
       ImGui::Image(texid, ImVec2(image_width, image_height));
     }
     ImGui::End();
+
+    bool refresh = false;
+    ImGui::Begin("IFT Parameters");
+    {
+      refresh |= ImGui::SliderInt("Samples X", &samples_x, 0, image_width);
+      refresh |= ImGui::SliderInt("Samples Y", &samples_y, 0, image_height);
+    }
+    ImGui::End();
+
+    if (refresh) {
+      computeFFT();
+    }
   };
 
   private:
-  std::vector<float> image; //[0, 1]のグレースケール画像
-  GLuint image_texture_id; //画像のテクスチャID
   int image_width; //画像の横幅
   int image_height; //画像の縦幅
+  std::vector<float> image; //[0, 1]のグレースケール画像
+  GLuint image_texture_id; //画像のテクスチャID
 
   GLuint ft_texture_id; //フーリエ変換後のテクスチャID
+
+  int samples_x; //逆フーリエ変換に使用するx方向の周波数
+  int samples_y; //逆フーリエ変換に使用するy方向の周波数
   GLuint ift_texture_id; //逆フーリエ変換のテクスチャID
 
   void setImage(const std::string& filename) {
@@ -134,11 +149,27 @@ class GUI {
     glBindTexture(GL_TEXTURE_2D, 0);
 
     //ift
+    fftw_complex* input_ift = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * N);
     fftw_complex* output_ift = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * N);
-    fftw_plan ift_plan = fftw_plan_dft_2d(image_width, image_height, output, output_ift, FFTW_BACKWARD, FFTW_ESTIMATE);
+    fftw_plan ift_plan = fftw_plan_dft_2d(image_width, image_height, input_ift, output_ift, FFTW_BACKWARD, FFTW_ESTIMATE);
+
+    for (int j = 0; j < samples_y; ++j) {
+      for (int i = 0; i < samples_x; ++i) {
+        input_ift[i + image_width*j][0] = output[i + image_width*j][0];
+        input_ift[i + image_width*j][1] = output[i + image_width*j][1];
+      }
+    }
+    for (int j = samples_y; j < image_height; ++j) {
+      for (int i = samples_x; i < image_width; ++i) {
+        input_ift[i + image_width*j][0] = 0;
+        input_ift[i + image_width*j][1] = 0;
+      }
+    }
+    fftw_free(output);
+
     fftw_execute(ift_plan);
     fftw_destroy_plan(ift_plan);
-    fftw_free(output);
+    fftw_free(input_ift);
 
     //create space domain texture
     std::vector<float> tex_space(3 * image_width * image_height, 0);
