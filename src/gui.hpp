@@ -56,7 +56,7 @@ class GUI {
     ImGui::End();
 
     if (refresh) {
-      computeFFT();
+      computeIFT();
     }
   };
 
@@ -66,6 +66,7 @@ class GUI {
   std::vector<float> image; //[0, 1]のグレースケール画像
   GLuint image_texture_id; //画像のテクスチャID
 
+  fftw_complex* ft; //フーリエ変換後の画像
   GLuint ft_texture_id; //フーリエ変換後のテクスチャID
 
   int samples_x; //逆フーリエ変換に使用するx方向の周波数
@@ -110,13 +111,13 @@ class GUI {
   void computeFFT() {
     //allocate input, ourput array
     const int N = image_width * image_height;
-    fftw_complex *input, *output;
+    fftw_complex *input;
     input = (fftw_complex*)(fftw_malloc(sizeof(fftw_complex) * N));
-    output = (fftw_complex*)(fftw_malloc(sizeof(fftw_complex) * N));
+    ft = (fftw_complex*)(fftw_malloc(sizeof(fftw_complex) * N));
 
     //create plan
     fftw_plan plan;
-    plan = fftw_plan_dft_2d(image_width, image_height, input, output, FFTW_FORWARD, FFTW_ESTIMATE);
+    plan = fftw_plan_dft_2d(image_width, image_height, input, ft, FFTW_FORWARD, FFTW_ESTIMATE);
 
     //input data
     for (int j = 0; j < image_height; ++j) {
@@ -134,7 +135,7 @@ class GUI {
 
     //create frequency domain texture
     std::vector<float> tex_freq(3 * image_width * image_height, 0);
-    createFFTTexture(output, tex_freq);
+    createFFTTexture(ft, tex_freq);
 
     //normalize texture
     normalizeFFT(tex_freq);
@@ -147,6 +148,11 @@ class GUI {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image_width, image_height, 0, GL_RGB, GL_FLOAT, tex_freq.data());
     glBindTexture(GL_TEXTURE_2D, 0);
+  };
+
+
+  void computeIFT() {
+    const int N = image_width * image_height;
 
     //ift
     fftw_complex* input_ift = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * N);
@@ -155,8 +161,8 @@ class GUI {
 
     for (int j = 0; j < samples_y; ++j) {
       for (int i = 0; i < samples_x; ++i) {
-        input_ift[i + image_width*j][0] = output[i + image_width*j][0];
-        input_ift[i + image_width*j][1] = output[i + image_width*j][1];
+        input_ift[i + image_width*j][0] = ft[i + image_width*j][0];
+        input_ift[i + image_width*j][1] = ft[i + image_width*j][1];
       }
     }
     for (int j = samples_y; j < image_height; ++j) {
@@ -165,7 +171,6 @@ class GUI {
         input_ift[i + image_width*j][1] = 0;
       }
     }
-    fftw_free(output);
 
     fftw_execute(ift_plan);
     fftw_destroy_plan(ift_plan);
