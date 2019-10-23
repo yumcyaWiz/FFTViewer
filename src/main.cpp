@@ -9,6 +9,8 @@
 
 #include "fftw3.h"
 
+#include "gui.hpp"
+
 
 int main() {
   //Initialize GLFW
@@ -43,6 +45,8 @@ int main() {
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init(glsl_version);
 
+  GUI gui;
+
   //Rendering Loop
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
@@ -51,8 +55,7 @@ int main() {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::Begin("FFT Parameters");
-    ImGui::End();
+    gui.draw();
 
     ImGui::Render();
     int display_w, display_h;
