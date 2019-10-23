@@ -32,5 +32,5 @@ target_include_directories(main PUBLIC imgui)
 target_link_libraries(main PUBLIC imgui) 
 
 #fftw
-add_subdirectory(ext/fftw)
-target_link_libraries(main PUBLIC ${fftw3_lib})
+target_include_directories(main PUBLIC fftw3)
+target_link_libraries(main PUBLIC fftw3)
