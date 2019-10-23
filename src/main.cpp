@@ -45,7 +45,7 @@ int main() {
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init(glsl_version);
 
-  GUI gui;
+  GUI gui("lena.png");
 
   //Rendering Loop
   while (!glfwWindowShouldClose(window)) {

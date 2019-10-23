@@ -16,13 +16,17 @@
 
 class GUI {
   public:
-  GUI() {
+  GUI(const std::string& filename) {
     glGenTextures(1, &image_texture_id);
     glGenTextures(1, &ft_texture_id);
     glGenTextures(1, &ift_texture_id);
 
-    setImage("lena.png");
+    setImage(filename);
     computeFFT();
+
+    samples_x = image_width;
+    samples_y = image_height;
+    computeIFT();
   };
 
   void draw() {
@@ -50,8 +54,17 @@ class GUI {
     bool refresh = false;
     ImGui::Begin("IFT Parameters");
     {
-      refresh |= ImGui::SliderInt("Samples X", &samples_x, 0, image_width);
-      refresh |= ImGui::SliderInt("Samples Y", &samples_y, 0, image_height);
+      static bool slider_xy = false;
+      ImGui::Checkbox("Slider XY", &slider_xy);
+
+      if(!slider_xy) {
+        refresh |= ImGui::SliderInt("Samples X", &samples_x, 0, image_width);
+        refresh |= ImGui::SliderInt("Samples Y", &samples_y, 0, image_height);
+      }
+      else {
+        refresh |= ImGui::SliderInt("Samples XY", &samples_x, 0, image_width);
+        samples_y = samples_x;
+      }
     }
     ImGui::End();
 
@@ -96,6 +109,7 @@ class GUI {
         image[2 + 3*i + 3*image_width*j] = avg;
       }
     }
+    stbi_image_free(img);
 
     glBindTexture(GL_TEXTURE_2D, image_texture_id); 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
@@ -104,8 +118,6 @@ class GUI {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image_width, image_height, 0, GL_RGB, GL_FLOAT, image.data());
     glBindTexture(GL_TEXTURE_2D, 0);
-
-    stbi_image_free(img);
   };
 
   void computeFFT() {
