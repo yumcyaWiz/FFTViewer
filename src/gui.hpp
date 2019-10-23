@@ -112,23 +112,10 @@ class GUI {
 
     //create frequency domain texture
     std::vector<float> tex(3 * image_width * image_height, 0);
-    for (int j = 0; j < image_height; ++j) {
-      for (int i = 0; i < image_width; ++i) {
-        const float real = output[i + image_width*j][0];
-        const float imag = output[i + image_width*j][1];
-        const float amp = std::sqrt(real*real + imag*imag);
-        tex[0 + 3*i + 3*image_width*j] = amp;
-        tex[1 + 3*i + 3*image_width*j] = amp;
-        tex[2 + 3*i + 3*image_width*j] = amp;
-      }
-    }
+    createFFTTexture(output, tex);
 
     //normalize texture
-    const float vmax = *std::max_element(tex.begin(), tex.end());
-    const float c = 1 / std::log(1 + vmax);
-    for (int i = 0; i < tex.size(); ++i) {
-      tex[i] = c * std::log(1 + tex[i]);
-    }
+    normalizeFFT(tex);
 
     //send frequency domain texture
     glBindTexture(GL_TEXTURE_2D, ft_texture_id);
@@ -140,6 +127,50 @@ class GUI {
     glBindTexture(GL_TEXTURE_2D, 0);
 
     fftw_free(output);
+  };
+
+
+  void createFFTTexture(const fftw_complex* fft, std::vector<float>& tex) {
+    for (int j = 0; j < image_height/2; ++j) {
+      for (int i = 0; i < image_width/2; ++i) {
+        const float real = fft[i + image_width*j][0];
+        const float imag = fft[i + image_width*j][1];
+        const float amp = std::sqrt(real*real + imag*imag);
+
+        //right-down
+        const int i_rd = i + image_width/2;
+        const int j_rd = j + image_height/2;
+        tex[0 + 3*i_rd + 3*image_width*j_rd] = amp;
+        tex[1 + 3*i_rd + 3*image_width*j_rd] = amp;
+        tex[2 + 3*i_rd + 3*image_width*j_rd] = amp;
+
+        //left-down
+        const int i_ld = image_width/2 - i - 1;
+        tex[0 + 3*i_ld + 3*image_width*j_rd] = amp;
+        tex[1 + 3*i_ld + 3*image_width*j_rd] = amp;
+        tex[2 + 3*i_ld + 3*image_width*j_rd] = amp;
+
+        //right-up
+        const int j_ru = image_height/2 - j - 1;
+        tex[0 + 3*i_rd + 3*image_width*j_ru] = amp;
+        tex[1 + 3*i_rd + 3*image_width*j_ru] = amp;
+        tex[2 + 3*i_rd + 3*image_width*j_ru] = amp;
+
+        //left-up
+        tex[0 + 3*i_ld + 3*image_width*j_ru] = amp;
+        tex[1 + 3*i_ld + 3*image_width*j_ru] = amp;
+        tex[2 + 3*i_ld + 3*image_width*j_ru] = amp;
+      }
+    }
+  }
+
+
+  void normalizeFFT(std::vector<float>& data) {
+    const float vmax = *std::max_element(data.begin(), data.end());
+    const float c = 1 / std::log(1 + vmax);
+    for (int i = 0; i < data.size(); ++i) {
+      data[i] = c * std::log(1 + data[i]);
+    }
   };
 };
 
