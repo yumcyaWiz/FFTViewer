@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <cmath>
 
 #include "GLFW/glfw3.h"
@@ -20,8 +21,8 @@ class GUI {
     glGenTextures(1, &ft_texture_id);
     glGenTextures(1, &ift_texture_id);
 
-    setImage("test.jpg");
-    setFFT();
+    setImage("lena.png");
+    computeFFT();
   };
 
   void draw() const {
@@ -43,8 +44,8 @@ class GUI {
   private:
   std::vector<float> image; //[0, 1]のグレースケール画像
   GLuint image_texture_id; //画像のテクスチャID
-  int image_width;
-  int image_height;
+  int image_width; //画像の横幅
+  int image_height; //画像の縦幅
 
   GLuint ft_texture_id; //フーリエ変換後のテクスチャID
   GLuint ift_texture_id; //逆フーリエ変換のテクスチャID
@@ -55,7 +56,7 @@ class GUI {
     unsigned char *img = stbi_load(filename.c_str(), &image_width, &image_height, &channels, 3);
     if (!img) {
       std::cerr << "failed to load image" << std::endl;
-      return;
+      std::exit(EXIT_FAILURE);
     }
     std::cout << "image loaded " << image_width << "x" << image_height << ", " << channels << std::endl;
 
@@ -84,7 +85,7 @@ class GUI {
     stbi_image_free(img);
   };
 
-  void setFFT() {
+  void computeFFT() {
     //allocate input, ourput array
     const int N = image_width * image_height;
     fftw_complex *input, *output;
@@ -110,7 +111,7 @@ class GUI {
     fftw_free(input);
 
     //create frequency domain texture
-    float *tex = new float[3 * image_width * image_height];
+    std::vector<float> tex(3 * image_width * image_height, 0);
     for (int j = 0; j < image_height; ++j) {
       for (int i = 0; i < image_width; ++i) {
         const float real = output[i + image_width*j][0];
@@ -121,17 +122,24 @@ class GUI {
         tex[2 + 3*i + 3*image_width*j] = amp;
       }
     }
-    fftw_free(output);
 
+    //normalize texture
+    const float vmax = *std::max_element(tex.begin(), tex.end());
+    const float c = 1 / std::log(1 + vmax);
+    for (int i = 0; i < tex.size(); ++i) {
+      tex[i] = c * std::log(1 + tex[i]);
+    }
+
+    //send frequency domain texture
     glBindTexture(GL_TEXTURE_2D, ft_texture_id);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image_width, image_height, 0, GL_RGB, GL_FLOAT, tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image_width, image_height, 0, GL_RGB, GL_FLOAT, tex.data());
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    delete[] tex;
+    fftw_free(output);
   };
 };
 
