@@ -3,12 +3,16 @@ cmake_minimum_required(VERSION 3.12)
 project(FFTViewer LANGUAGES C CXX)
 
 add_executable(main src/main.cpp)
-target_compile_options(main PUBLIC -Wall -Wextra -pedantic-errors)
+target_compile_options(main PUBLIC 
+  -Wall -Wextra -pedantic-errors
+  $<$<CONFIG:Debug>: -g3 -O0 -pg>
+  $<$<CONFIG:Release>: -O3 -s -DNDEBUG -march=native -mtune=native>
+)
 target_compile_features(main PUBLIC cxx_std_17)
-target_include_directories(main PUBLIC ext)
 
 #stb_image
 target_compile_definitions(main PUBLIC STB_IMAGE_IMPLEMENTATION)
+target_include_directories(main PUBLIC ext)
 
 #glad
 add_library(glad STATIC ext/glad/src/glad.c)
