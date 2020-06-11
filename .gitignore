@@ -3,3 +3,4 @@ build/
 ext/
 *.png
 *.jpg
+!img.png

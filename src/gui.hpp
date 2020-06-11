@@ -17,7 +17,7 @@
 class GUI {
   public:
   GUI(const std::string& filename) {
-    glGenTextures(1, &image_texture_id);
+    glGenTextures(1, &image_texture);
     glGenTextures(1, &ft_texture_id);
     glGenTextures(1, &ift_texture_id);
 
@@ -32,7 +32,7 @@ class GUI {
   void draw() {
     ImGui::Begin("Image");
     {
-      ImTextureID texid = (ImTextureID)(intptr_t)image_texture_id;
+      ImTextureID texid = (ImTextureID)(intptr_t)image_texture;
       ImGui::Image(texid, ImVec2(image_width, image_height));
     }
     ImGui::End();
@@ -77,7 +77,7 @@ class GUI {
   int image_width; //画像の横幅
   int image_height; //画像の縦幅
   std::vector<float> image; //[0, 1]のグレースケール画像
-  GLuint image_texture_id; //画像のテクスチャID
+  GLuint image_texture; //画像のテクスチャID
 
   fftw_complex* ft; //フーリエ変換後の画像
   GLuint ft_texture_id; //フーリエ変換後のテクスチャID
@@ -111,7 +111,7 @@ class GUI {
     }
     stbi_image_free(img);
 
-    glBindTexture(GL_TEXTURE_2D, image_texture_id); 
+    glBindTexture(GL_TEXTURE_2D, image_texture); 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
